@@ -596,8 +596,13 @@ function PLPPage({ isLoggedIn, navTo, addToCart, products, activeFilters, toggle
               border: `0.5px solid ${activeFilters.promoOnly ? COLORS.gold : COLORS.silver}`,
               padding: "6px 12px", borderRadius: 999, fontSize: 11, color: activeFilters.promoOnly ? COLORS.authority : COLORS.darkGray,
               fontWeight: activeFilters.promoOnly ? 600 : 400, display: "flex", alignItems: "center", gap: 4,
+              position: "relative",
             }}>
               {activeFilters.promoOnly && <Tag size={10}/>} Active promotion
+              <span style={{
+                background: COLORS.gold, color: COLORS.authority, fontSize: 8, fontWeight: 700,
+                padding: "1px 4px", borderRadius: 99, marginLeft: 2,
+              }} title="BigC: not native — requires custom JS or Searchanise/Boost app">⚙</span>
             </button>
             {totalActiveFilters > 0 && (
               <button onClick={clearFilters} style={{
@@ -657,6 +662,11 @@ function PLPPage({ isLoggedIn, navTo, addToCart, products, activeFilters, toggle
                     background: `linear-gradient(135deg, ${COLORS.authority} 0%, ${COLORS.physician} 100%)`,
                     color: "white", padding: 32, borderRadius: 8, position: "relative", margin: "8px 0",
                   }}>
+                    <BigCNote
+                      label="PLACEMENT SELECTOR"
+                      note="Spec: 'decide PLP grid position (e.g. position 3)'. NOT native to BigC — requires custom JS reading a metafield + repositioning, OR a page builder app (PageFly). PENDING DEV CONFIRMATION. Cheaper alternative: hardcoded position."
+                      position="right"
+                    />
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div>
                         <div style={{ fontSize: 10, opacity: 0.7, letterSpacing: 1.5, fontWeight: 600 }}>SPECIAL FEATURE</div>
@@ -805,16 +815,213 @@ function qtyBtn() {
 }
 
 // ============================================================
-// PDP PAGE
+// PDP PAGE — conditional template based on isInjectable
 // ============================================================
 function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
   const [qty, setQty] = useState(1);
+
+  // CONDITIONAL: injectables get the medical/clinical format
+  // (mirroring current obagi.com/saypha PDP structure)
+  // skincare gets the modern spec 4.3 format (B&A, video, reviews, etc.)
+  if (product.isInjectable) {
+    return <PDPInjectable isLoggedIn={isLoggedIn} product={product} navTo={navTo} addToCart={addToCart} setShowLoginModal={setShowLoginModal} qty={qty} setQty={setQty} />;
+  }
+  return <PDPSkincare isLoggedIn={isLoggedIn} product={product} navTo={navTo} addToCart={addToCart} setShowLoginModal={setShowLoginModal} qty={qty} setQty={setQty} />;
+}
+
+// ============================================================
+// PDP — INJECTABLE FORMAT (matches current obagi.com/saypha)
+// Editorial headings, stacked sections in #F3F6FD, no B&A, no reviews
+// ============================================================
+function PDPInjectable({ isLoggedIn, product, navTo, addToCart, setShowLoginModal, qty, setQty }) {
+  return (
+    <main style={{ background: "white", paddingBottom: 48 }}>
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: 24 }}>
+        {/* TEMPLATE INDICATOR — only visible in POC */}
+        <BigCNote
+          label="INJECTABLE PDP TEMPLATE"
+          note="This PDP uses the medical/clinical format mirroring current obagi.com/saypha. Triggered by product.custom_fields.is_injectable in Stencil. Spec sections that DO NOT apply here: B&A slider, Pro reviews, video module, 'Best for' tags. PENDING DECISION: Does OBAGI Legal approve B&A or reviews on injectable PDPs?"
+        />
+
+        {/* Breadcrumb */}
+        <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1, marginBottom: 24 }}>
+          <button onClick={() => navTo("home")} style={linkBtn()}>HOME</button> / <button onClick={() => navTo("plp", { collection: null })} style={linkBtn()}>SHOP</button> / <button onClick={() => navTo("plp", { collection: product.line })} style={linkBtn()}>{product.line.toUpperCase()}</button> / <span>{product.name.toUpperCase()}</span>
+        </div>
+
+        {/* Hero: image + buy box (mirror saypha layout) */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginBottom: 48 }}>
+          <div>
+            <div style={{
+              background: COLORS.blueLight, aspectRatio: "1/1", borderRadius: 4, position: "relative",
+              display: "flex", alignItems: "center", justifyContent: "center", color: COLORS.inactive, fontSize: 13,
+            }}>
+              <span style={{
+                position: "absolute", top: 16, left: 16, background: COLORS.authority, color: "white",
+                fontSize: 10, padding: "4px 10px", fontWeight: 600, letterSpacing: 1,
+              }}>NEW</span>
+              [Injectable product image]
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1.5, fontWeight: 600 }}>OBAGI MEDICAL</div>
+            <h1 style={{ fontSize: 38, fontWeight: 600, color: COLORS.authority, margin: "8px 0 16px", lineHeight: 1.1, letterSpacing: -0.5 }}>
+              Obagi® {product.name}<sup style={{ fontSize: 16 }}>™</sup>
+            </h1>
+
+            {isLoggedIn ? (
+              <>
+                <div style={{ fontSize: 28, fontWeight: 600, color: COLORS.authority, marginBottom: 16 }}>${product.price.toFixed(2)}</div>
+              </>
+            ) : (
+              <div style={{ marginBottom: 16, padding: 14, background: COLORS.blueLight, borderRadius: 4 }}>
+                <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1, fontWeight: 600 }}>PROFESSIONAL ACCOUNT REQUIRED</div>
+                <button onClick={() => setShowLoginModal(true)} style={{
+                  background: "transparent", border: "none", color: COLORS.physician,
+                  fontSize: 13, fontWeight: 600, padding: 0, marginTop: 4,
+                }}>Sign in to view price →</button>
+              </div>
+            )}
+
+            <p style={{ fontSize: 14, color: COLORS.darkGray, lineHeight: 1.6, marginBottom: 16 }}>
+              A hyaluronic acid (HA) dermal filler with the most usable HA concentration<sup>1</sup> to smooth wrinkles and folds in the lower face resulting in predictable performance and patient satisfaction<sup>2</sup>.
+            </p>
+
+            <p style={{ fontSize: 14, color: COLORS.darkGray, fontWeight: 600, marginBottom: 16 }}>
+              ** Free Shipping on orders $1700+ **
+            </p>
+
+            <p style={{ fontSize: 13, color: COLORS.darkGray, marginBottom: 8 }}>
+              Made in Austria by Croma-Pharma GmbH.
+            </p>
+            <p style={{ fontSize: 13, color: COLORS.darkGray, marginBottom: 24 }}>
+              Distributed and sold in the United States by Obagi Cosmeceuticals LLC.
+            </p>
+
+            <div style={{ fontSize: 11, color: COLORS.darkGray, lineHeight: 1.6, padding: 12, background: "#fafafa", borderRadius: 4, marginBottom: 24 }}>
+              1. Puljic A, Frank K, Cohen J, Otto K, Mayr J, Hugh-Bloch A, Kuroki-Hasenöhrl, D. A Scientific Framework for Comparing Hyaluronic Acid Filler Crosslinking Technologies. Gels. 2025; 11(7):487.<br/>
+              2. saypha MagIQ. Directions for Use. Croma-Pharma GmbH; 2025.
+            </div>
+
+            {isLoggedIn && (
+              <>
+                <div style={{ fontSize: 13, color: COLORS.authority, fontWeight: 600, marginBottom: 8 }}>Quantity:</div>
+                <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", border: `0.5px solid ${COLORS.silver}`, borderRadius: 4 }}>
+                    <button onClick={() => setQty(Math.max(1, qty - 1))} style={qtyBtn()}><Minus size={12}/></button>
+                    <span style={{ padding: "0 16px", fontSize: 13, borderLeft: `0.5px solid ${COLORS.silver}`, borderRight: `0.5px solid ${COLORS.silver}` }}>{qty}</span>
+                    <button onClick={() => setQty(qty + 1)} style={qtyBtn()}><Plus size={12}/></button>
+                  </div>
+                  <button onClick={() => { addToCart(product, qty); setQty(1); }} className="obagi-cta-primary" style={{
+                    flex: 1, background: COLORS.authority, color: "white", border: "none",
+                    padding: "14px 28px", borderRadius: 999, fontSize: 12, letterSpacing: 1.5, fontWeight: 600,
+                  }}>ADD TO BAG</button>
+                </div>
+                <div style={{
+                  padding: 12, background: "#FFF8E5", border: `0.5px solid ${COLORS.gold}`, borderRadius: 4,
+                  display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: COLORS.darkGray,
+                }}>
+                  <Truck size={16} color={COLORS.authority}/>
+                  <div><strong style={{ color: COLORS.authority }}>Injectable shipping</strong> — 2-day air, signature required, packaged separately</div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* HOW TO USE — three columns (Assess / Inject / Note) — mirrors current saypha PDP */}
+        <section style={{ background: COLORS.blueLight, padding: 40, borderRadius: 6, marginBottom: 24 }}>
+          <h2 style={{ fontSize: 32, color: COLORS.authority, fontWeight: 700, margin: "0 0 24px" }}>How to Use</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
+            <div>
+              <h3 style={{ fontSize: 18, color: COLORS.authority, fontWeight: 600, margin: "0 0 8px", borderBottom: `1px solid ${COLORS.silver}`, paddingBottom: 8 }}>Assess</h3>
+              <p style={{ fontSize: 13, color: COLORS.darkGray, lineHeight: 1.6 }}>
+                Indicated for injection into the mid to deep dermis for correction of moderate to severe facial wrinkles and folds (such as nasolabial folds) in adults over the age of 21.
+              </p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: 18, color: COLORS.authority, fontWeight: 600, margin: "0 0 8px", borderBottom: `1px solid ${COLORS.silver}`, paddingBottom: 8 }}>Inject</h3>
+              <p style={{ fontSize: 13, color: COLORS.darkGray, lineHeight: 1.6 }}>
+                In the clinical study, injection technique included needle injection with retrograde or fan technique (per treating investigator).<sup>*1</sup>
+              </p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: 18, color: COLORS.authority, fontWeight: 600, margin: "0 0 8px", borderBottom: `1px solid ${COLORS.silver}`, paddingBottom: 8 }}>Note</h3>
+              <p style={{ fontSize: 13, color: COLORS.darkGray, lineHeight: 1.6 }}>
+                Prescription use only; refer to <a style={{ color: COLORS.physician }}>Directions for Use</a> for full administration guidance and <a style={{ color: COLORS.physician }}>Safety Information</a> available at: <a style={{ color: COLORS.physician }}>https://www.obagi.com/saypha</a>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* INGREDIENTS */}
+        <section style={{ background: COLORS.blueLight, padding: 40, borderRadius: 6, marginBottom: 24, position: "relative" }}>
+          <BigCNote
+            label="METAFIELD-DRIVEN"
+            note="In BigC Stencil, this section reads from product.metafields.ingredient_deck. Pending: OBAGI to define proprietary complex naming format (spec 4.3)."
+          />
+          <h2 style={{ fontSize: 32, color: COLORS.authority, fontWeight: 700, margin: "0 0 16px" }}>Ingredients</h2>
+          <p style={{ fontSize: 14, color: COLORS.darkGray, lineHeight: 1.7 }}>
+            Cross-linked hyaluronic acid (in phosphate buffer) with 0.3% lidocaine.
+          </p>
+        </section>
+
+        {/* SAFETY INFORMATION */}
+        <section style={{ background: COLORS.blueLight, padding: 40, borderRadius: 6, marginBottom: 24 }}>
+          <h2 style={{ fontSize: 32, color: COLORS.authority, fontWeight: 700, margin: "0 0 16px" }}>Safety Information</h2>
+          <ul style={{ fontSize: 13, color: COLORS.darkGray, lineHeight: 1.7, paddingLeft: 20, margin: 0 }}>
+            <li>Prescription use only</li>
+            <li>Directions for Use for full administration guidance and safety information are available at <a style={{ color: COLORS.physician }}>obagi.com/saypha</a></li>
+            <li><strong>Approved Use:</strong> Indicated for injection into the mid to deep dermis for correction of moderate to severe facial wrinkles and folds (such as nasolabial folds) in adults over the age of 21</li>
+            <li>The most commonly observed side effects include swelling, redness, pain, bruising, tenderness, lump formation, and itching at the injection site. To learn more about serious but rare side effects and full <a style={{ color: COLORS.physician }}>Important Safety Information</a>, visit <a style={{ color: COLORS.physician }}>obagi.com/saypha</a></li>
+            <li>To report a side effect with any product, please call Obagi® Customer Support at 1-888-798-9809</li>
+          </ul>
+          <h3 style={{ fontSize: 13, color: COLORS.authority, fontWeight: 700, letterSpacing: 1, margin: "24px 0 12px" }}>INTELLECTUAL PROPERTY</h3>
+          <ul style={{ fontSize: 13, color: COLORS.darkGray, lineHeight: 1.7, paddingLeft: 20, margin: 0 }}>
+            <li>For patent information, visit <a style={{ color: COLORS.physician }}>obagi.com/saypha</a></li>
+            <li>Obagi® and all derivatives are registered trademarks of Obagi Cosmeceuticals LLC</li>
+            <li>All other products/brand names, whether designated by notice or not, are trademarks of their respective owners</li>
+          </ul>
+        </section>
+
+        {/* CLINICAL DATA */}
+        <section style={{ background: COLORS.blueLight, padding: 40, borderRadius: 6, marginBottom: 24 }}>
+          <h2 style={{ fontSize: 32, color: COLORS.authority, fontWeight: 700, margin: "0 0 16px" }}>Clinical Data</h2>
+          <ul style={{ fontSize: 13, color: COLORS.darkGray, lineHeight: 1.7, paddingLeft: 20, margin: "0 0 20px" }}>
+            <li>In a U.S. pivotal study of 270 participants, the product demonstrated non-inferiority to comparator filler through 12 months, confirming comparable safety and effectiveness.<sup>*1</sup></li>
+            <li>At 3 months, 90% of patients were pleased with their results.<sup>*2</sup></li>
+          </ul>
+          <div style={{ fontSize: 11, color: COLORS.darkGray, lineHeight: 1.6 }}>
+            * This summary reflects the clinical trial as conducted and published. Obagi® Medical was not involved in this research, and all information provided originates from third-party sources.<br/>
+            1. Data on file. Clinical Study Report. 2025.<br/>
+            2. Downie J, Gold M, Joseph J, Green J, Fabi S, Bank D, Cohen JL, Shamban A. Weiss R, Krames-Juerss A. Monheit G. Multicenter, Randomized Split-Face Trial of a Crosslinked Hyaluronic Acid Filler With Lidocaine for Nasolabial Fold Correction. Aesthet Surg J. 2025 Aug 1:sjaf137
+          </div>
+        </section>
+
+        <div style={{ padding: 16, background: "#FFF8E5", border: `0.5px dashed ${COLORS.gold}`, borderRadius: 6, fontSize: 12, color: COLORS.darkGray, lineHeight: 1.6 }}>
+          <strong style={{ color: COLORS.authority }}>⚠ Decisión pendiente para mañana:</strong> Spec 4.3 pide B&A slider, Pro reviews, y video module en TODAS las PDPs. Esta versión injectable los omite porque (a) el PDP actual de saypha no los tiene, (b) reviews y B&A en injectables pueden tener implicancias regulatorias FDA. Confirmar con OBAGI Legal.
+        </div>
+      </div>
+    </main>
+  );
+}
+
+// ============================================================
+// PDP — SKINCARE FORMAT (full spec 4.3 implementation)
+// ============================================================
+function PDPSkincare({ isLoggedIn, product, navTo, addToCart, setShowLoginModal, qty, setQty }) {
   const [activeTab, setActiveTab] = useState("ingredients");
   const [activeImage, setActiveImage] = useState(0);
 
   return (
     <main style={{ background: "white", paddingBottom: 48 }}>
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: 24 }}>
+        {/* TEMPLATE INDICATOR */}
+        <BigCNote
+          label="SKINCARE PDP TEMPLATE"
+          note="Full spec 4.3 implementation: exposed gallery, B&A slider, video module, Pro reviews, 'Best for' tags. Triggered by product.custom_fields.is_injectable === false. In Stencil this is a single template with conditional Handlebars rendering."
+        />
+
         {/* Breadcrumb */}
         <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1, marginBottom: 24 }}>
           <button onClick={() => navTo("home")} style={linkBtn()}>HOME</button> / <button onClick={() => navTo("plp", { collection: null })} style={linkBtn()}>SHOP</button> / <button onClick={() => navTo("plp", { collection: product.line })} style={linkBtn()}>{product.line.toUpperCase()}</button> / <span>{product.name.toUpperCase()}</span>
@@ -822,8 +1029,12 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
 
         {/* Hero: gallery + buy box */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 40 }}>
-          {/* Exposed gallery */}
-          <div>
+          <div style={{ position: "relative" }}>
+            <BigCNote
+              label="EXPOSED GALLERY"
+              note="Spec 4.3: 'exposed revamp preferred (OneSkin reference)'. Custom Stencil component required — BigC native gallery is a standard slideshow."
+              position="right"
+            />
             <div style={{
               background: COLORS.blueLight, aspectRatio: "1/1", borderRadius: 8, position: "relative",
               display: "flex", alignItems: "center", justifyContent: "center", color: COLORS.inactive, fontSize: 13,
@@ -845,12 +1056,8 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
                 </button>
               ))}
             </div>
-            <div style={{ fontSize: 10, color: COLORS.darkGray, marginTop: 8, fontStyle: "italic" }}>
-              Exposed gallery (OneSkin reference style)
-            </div>
           </div>
 
-          {/* Buy box */}
           <div>
             <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1, fontWeight: 600 }}>{product.line.toUpperCase()}</div>
             <h1 style={{ fontSize: 32, fontWeight: 500, color: COLORS.authority, margin: "6px 0 8px", letterSpacing: -0.3 }}>
@@ -865,9 +1072,7 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
               <>
                 <div style={{ marginTop: 20, padding: 16, background: COLORS.blueLight, borderRadius: 6 }}>
                   <div style={{ fontSize: 10, color: COLORS.darkGray, letterSpacing: 1, fontWeight: 600 }}>PRO PRICE</div>
-                  <div style={{ fontSize: 28, fontWeight: 600, color: COLORS.authority, marginTop: 4 }}>
-                    ${product.price.toFixed(2)}
-                  </div>
+                  <div style={{ fontSize: 28, fontWeight: 600, color: COLORS.authority, marginTop: 4 }}>${product.price.toFixed(2)}</div>
                 </div>
                 <div style={{ marginTop: 16, fontSize: 12, color: COLORS.darkGray }}>
                   <strong style={{ color: COLORS.authority }}>Size:</strong> {product.size}
@@ -883,17 +1088,6 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
                 <button onClick={() => { addToCart(product, qty); setQty(1); }} className="obagi-cta-primary" style={{
                   ...primaryCTA(), width: "100%", marginTop: 20, background: COLORS.authority, color: "white",
                 }}>ADD TO BAG</button>
-                {product.isInjectable && (
-                  <div style={{
-                    marginTop: 12, padding: 12, background: "#FFF8E5", border: `0.5px solid ${COLORS.gold}`, borderRadius: 4,
-                    display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: COLORS.darkGray,
-                  }}>
-                    <Truck size={16} color={COLORS.authority}/>
-                    <div>
-                      <strong style={{ color: COLORS.authority }}>Injectable shipping</strong> — 2-day air, signature required, packaged separately from skincare items
-                    </div>
-                  </div>
-                )}
               </>
             ) : (
               <div style={{ marginTop: 20, padding: 20, background: COLORS.blueLight, borderRadius: 6, textAlign: "center" }}>
@@ -909,7 +1103,12 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
             )}
 
             {/* Best for */}
-            <div style={{ marginTop: 24, padding: 14, background: COLORS.blueLight, borderRadius: 6 }}>
+            <div style={{ marginTop: 24, padding: 14, background: COLORS.blueLight, borderRadius: 6, position: "relative" }}>
+              <BigCNote
+                label="BEST FOR — METAFIELD"
+                note="Spec 4.3: end-user concern + skin type. In BigC, custom product fields populate this. Tags like 'Discoloration' map to facets in PLP filters."
+                position="right"
+              />
               <div style={{ fontSize: 10, color: COLORS.darkGray, letterSpacing: 1.5, fontWeight: 600 }}>BEST FOR</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                 <span style={{ background: COLORS.authority, color: "white", fontSize: 10, padding: "4px 10px", borderRadius: 999 }}>{product.concern}</span>
@@ -951,9 +1150,6 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
               }}>
                 Aqua/Water, {product.ingredient}, OBAGI Penetrating Therapeutics™ (Proprietary Complex), Glycerin, Propylene Glycol, Sodium PCA, Tocopheryl Acetate, Allantoin, Citric Acid, Phenoxyethanol...
               </div>
-              <div style={{ fontSize: 11, color: COLORS.darkGray, marginTop: 8, fontStyle: "italic" }}>
-                Metafield-driven · proprietary complex naming defined by OBAGI
-              </div>
             </div>
           )}
           {activeTab === "clinicals" && (
@@ -974,7 +1170,11 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
             </div>
           )}
           {activeTab === "usage" && (
-            <div>
+            <div style={{ position: "relative" }}>
+              <BigCNote
+                label="LOCK-UP MEDIA + TEXT"
+                note="Spec 4.3: 'media + text lock-up' for How to Use. Implemented as Stencil partial with metafield-driven copy. Layout flexibility TBD by OBAGI."
+              />
               <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1, fontWeight: 600, marginBottom: 12 }}>HOW TO USE</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 16 }}>
                 <div style={{ background: COLORS.blueLight, aspectRatio: "1/1", borderRadius: 6 }}/>
@@ -985,9 +1185,6 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
                     <li>Gently massage until fully absorbed</li>
                     <li>Follow with moisturizer and SPF (AM)</li>
                   </ol>
-                  <div style={{ fontSize: 10, color: COLORS.darkGray, marginTop: 12, fontStyle: "italic" }}>
-                    Lock-up: media + text · metafield-driven · layout flexibility TBD
-                  </div>
                 </div>
               </div>
             </div>
@@ -996,14 +1193,19 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
             <div>
               <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1, fontWeight: 600, marginBottom: 12 }}>SAFETY INFORMATION</div>
               <div style={{ padding: 20, background: COLORS.blueLight, borderRadius: 6, fontSize: 13, color: COLORS.darkGray, lineHeight: 1.7 }}>
-                <strong style={{ color: COLORS.authority }}>For professional use.</strong> Patch test recommended before first use. Avoid contact with eyes. If irritation occurs, discontinue use. Keep out of reach of children. Store at room temperature. Do not use on broken or damaged skin. Consult Pro guidelines for combination with other actives.
+                <strong style={{ color: COLORS.authority }}>For professional use.</strong> Patch test recommended before first use. Avoid contact with eyes. If irritation occurs, discontinue use. Keep out of reach of children. Store at room temperature. Do not use on broken or damaged skin.
               </div>
             </div>
           )}
         </div>
 
         {/* B&A SLIDER */}
-        <div style={{ marginBottom: 40 }}>
+        <div style={{ marginBottom: 40, position: "relative" }}>
+          <BigCNote
+            label="B&A SLIDER"
+            note="Custom HTML/CSS/JS component. Not native to BigC. Standard frontend implementation — no app required."
+            position="right"
+          />
           <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1.5, fontWeight: 600, marginBottom: 12 }}>CLINICALLY PROVEN — BEFORE & AFTER</div>
           <div style={{
             background: `linear-gradient(to right, ${COLORS.silver} 50%, ${COLORS.blueLight} 50%)`,
@@ -1022,7 +1224,11 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
         </div>
 
         {/* VIDEO MODULE */}
-        <div style={{ marginBottom: 40 }}>
+        <div style={{ marginBottom: 40, position: "relative" }}>
+          <BigCNote
+            label="VIDEO MODULE"
+            note="Spec: 'independent mobile and desktop specs · text overlays · CTAs'. In BigC: custom Stencil component reading from product metafields (video_desktop_url, video_mobile_url, video_overlay_text). Not native — frontend build."
+          />
           <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1.5, fontWeight: 600, marginBottom: 12 }}>USAGE & TEXTURE</div>
           <div style={{
             background: COLORS.authority, aspectRatio: "16/6", borderRadius: 8, position: "relative",
@@ -1032,14 +1238,15 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
               width: 64, height: 64, borderRadius: 99, background: "rgba(255,255,255,0.15)",
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, cursor: "pointer",
             }}>▶</div>
-            <span style={{ position: "absolute", bottom: 16, left: 20, fontSize: 10, opacity: 0.7 }}>
-              Standalone video · independent mobile/desktop specs · text overlays + CTAs
-            </span>
           </div>
         </div>
 
         {/* REVIEWS */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24, position: "relative" }}>
+          <BigCNote
+            label="REVIEWS ARCHITECTURE"
+            note="Per 05.06 meeting: Pro reviews use the native section unhidden from Phase 1. D2C reviews curated by OBAGI as text testimonials (NOT imported via CSV). 3rd-party app only if native falls short. Pending: confirm email vs SMS solicitation method."
+          />
           <div>
             <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1.5, fontWeight: 600, marginBottom: 12 }}>PRO REVIEWS · NATIVE</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1062,18 +1269,18 @@ function PDPPage({ isLoggedIn, product, navTo, addToCart, setShowLoginModal }) {
             )}
           </div>
           <div>
-            <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1.5, fontWeight: 600, marginBottom: 12 }}>D2C SELL-THROUGH</div>
+            <div style={{ fontSize: 11, color: COLORS.darkGray, letterSpacing: 1.5, fontWeight: 600, marginBottom: 12 }}>D2C TESTIMONIALS</div>
             <div style={{ background: COLORS.blueLight, padding: 24, borderRadius: 6, textAlign: "center" }}>
               <div style={{ fontSize: 36, fontWeight: 600, color: COLORS.authority }}>★ {product.rating}</div>
               <div style={{ fontSize: 11, color: COLORS.darkGray, marginTop: 4 }}>{product.reviews} D2C reviews</div>
-              <div style={{ fontSize: 10, color: COLORS.darkGray, marginTop: 6, fontStyle: "italic" }}>Curated as testimonials</div>
+              <div style={{ fontSize: 10, color: COLORS.darkGray, marginTop: 6, fontStyle: "italic" }}>Curated by OBAGI as testimonials</div>
             </div>
           </div>
         </div>
 
         {/* FUTURE FLAG */}
         <div style={{ marginTop: 32, padding: 16, background: COLORS.blueLight, borderRadius: 6, fontSize: 11, color: COLORS.darkGray, fontStyle: "italic" }}>
-          ↗ FUTURE (not in Phase 2 scope): Shop the Regimen multi-product modules · Pro-UGC carousels
+          ↗ FUTURE (not in Phase 2 scope): Shop the Regimen multi-product modules · Pro-UGC carousels (Cohley/ALOHA)
         </div>
       </div>
     </main>
@@ -1128,8 +1335,13 @@ function CartPage({ isLoggedIn, cart, cartTotal, hasInjectable, hasSkincare, upd
         {hasInjectable && hasSkincare && (
           <div style={{
             background: "#FFF8E5", border: `0.5px solid ${COLORS.gold}`, padding: 20, borderRadius: 8,
-            marginBottom: 24, display: "flex", gap: 16, alignItems: "flex-start",
+            marginBottom: 24, display: "flex", gap: 16, alignItems: "flex-start", position: "relative",
           }}>
+            <BigCNote
+              label="SPLIT FULFILLMENT"
+              note="Per spec 4.6 + 05.06 meeting: cart UI is unified, split happens 100% on the back end (Velocity). BigC captures payment, Velocity records order and routes fulfillment. NO front-end split — this notice is informational only."
+              position="right"
+            />
             <Truck size={24} color={COLORS.authority} style={{ flexShrink: 0, marginTop: 2 }}/>
             <div>
               <div style={{ fontSize: 13, color: COLORS.authority, fontWeight: 600, letterSpacing: 0.5 }}>SPLIT SHIPMENT NOTICE</div>
@@ -1309,7 +1521,12 @@ function OffersPage({ isLoggedIn, addToCart, navTo, setShowLoginModal }) {
           ))}
         </div>
 
-        <div style={{ marginTop: 32, padding: 16, background: COLORS.blueLight, borderRadius: 6, fontSize: 11, color: COLORS.darkGray, fontStyle: "italic" }}>
+        <div style={{ marginTop: 32, padding: 16, background: COLORS.blueLight, borderRadius: 6, fontSize: 11, color: COLORS.darkGray, fontStyle: "italic", position: "relative" }}>
+          <BigCNote
+            label="AUTO-ADD PROMO"
+            note="Spec 4.4: 'CTA adds 5 products + applies coupon when clicked'. BigC native coupons handle the discount. Auto-adding multiple products on one click requires custom JS or a 3rd-party app (e.g. In-Cart Upsell). Standard 'Buy 5 Get 15%' coupon works natively without auto-add. PENDING DEV CONFIRMATION."
+            position="right"
+          />
           ⚠ PENDING DEV (spec 4.4): "Add CTA promo directly to cart" — auto-add 5 products + apply coupon when clicked
         </div>
       </div>
@@ -1427,6 +1644,69 @@ function Footer() {
 }
 
 // ============================================================
+// BigC TECHNICAL NOTE — clickable marker that reveals BigCommerce
+// implementation context. Used to flag pending dev confirmations,
+// metafield-driven sections, and platform constraints.
+// ============================================================
+function BigCNote({ label, note, position = "left" }) {
+  const [open, setOpen] = useState(false);
+  const positionStyles = position === "right"
+    ? { top: 12, right: 12 }
+    : { top: 12, left: 12 };
+
+  return (
+    <>
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        style={{
+          position: "absolute", ...positionStyles, zIndex: 10,
+          background: open ? COLORS.authority : "rgba(255, 183, 0, 0.95)",
+          color: open ? "white" : COLORS.authority,
+          border: "none", padding: "4px 10px", borderRadius: 99,
+          fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
+          display: "flex", alignItems: "center", gap: 4, cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(23, 36, 98, 0.15)",
+        }}
+        title="BigCommerce technical note"
+      >
+        <span style={{ fontSize: 10 }}>⚙</span> {label}
+      </button>
+      {open && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: "absolute", ...positionStyles,
+            top: position === "right" ? 44 : 44,
+            zIndex: 11,
+            background: COLORS.authority, color: "white",
+            padding: 14, borderRadius: 6,
+            fontSize: 11, lineHeight: 1.6,
+            maxWidth: 320, minWidth: 240,
+            boxShadow: "0 8px 32px rgba(23, 36, 98, 0.3)",
+            border: `1px solid ${COLORS.physician}`,
+          }}
+        >
+          <div style={{
+            fontSize: 9, color: COLORS.gold, fontWeight: 700, letterSpacing: 1,
+            marginBottom: 6, display: "flex", alignItems: "center", gap: 4,
+          }}>
+            ⚙ BIGCOMMERCE NOTE
+          </div>
+          <div style={{ fontSize: 10, opacity: 0.95, fontWeight: 400 }}>{note}</div>
+          <button
+            onClick={() => setOpen(false)}
+            style={{
+              background: "transparent", border: "none", color: "rgba(255,255,255,0.6)",
+              fontSize: 10, padding: 0, marginTop: 8, cursor: "pointer",
+            }}
+          >Close ✕</button>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ============================================================
 // CTAs (style helpers)
 // ============================================================
 function primaryCTA() {
@@ -1445,10 +1725,13 @@ function secondaryCTA() {
 }
 
 // ============================================================
-// DEMO CONTROLS (floating helper for demo)
+// DEMO CONTROLS — floating panel with status, BigC notes toggle,
+// and quick-access guide for the meeting demo.
 // ============================================================
 function DemoControls({ isLoggedIn, cartCount, page }) {
   const [open, setOpen] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
+
   if (!open) {
     return (
       <button onClick={() => setOpen(true)} style={{
@@ -1461,29 +1744,64 @@ function DemoControls({ isLoggedIn, cartCount, page }) {
   return (
     <div style={{
       position: "fixed", bottom: 16, right: 16, background: "white",
-      border: `0.5px solid ${COLORS.silver}`, borderRadius: 8, padding: 12,
-      fontSize: 11, color: COLORS.darkGray, zIndex: 90, minWidth: 180,
+      border: `0.5px solid ${COLORS.silver}`, borderRadius: 8, padding: 14,
+      fontSize: 11, color: COLORS.darkGray, zIndex: 90, minWidth: 240, maxWidth: 280,
       boxShadow: "0 4px 16px rgba(23, 36, 98, 0.15)",
+      fontFamily: "'Open Sans', system-ui, sans-serif",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <span style={{ fontSize: 10, color: COLORS.authority, fontWeight: 600, letterSpacing: 1 }}>POC STATUS</span>
-        <button onClick={() => setOpen(false)} style={{ background: "transparent", border: "none", color: COLORS.darkGray, padding: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, paddingBottom: 8, borderBottom: `0.5px solid ${COLORS.blueLight}` }}>
+        <span style={{ fontSize: 10, color: COLORS.authority, fontWeight: 700, letterSpacing: 1 }}>OBAGI POC · DEMO PANEL</span>
+        <button onClick={() => setOpen(false)} style={{ background: "transparent", border: "none", color: COLORS.darkGray, padding: 0, cursor: "pointer" }}>
           <X size={12}/>
         </button>
       </div>
+
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
         <span>Auth:</span>
         <span style={{ color: isLoggedIn ? COLORS.physician : COLORS.darkGray, fontWeight: 600 }}>
-          {isLoggedIn ? "LOGGED IN" : "LOGGED OUT"}
+          {isLoggedIn ? "✓ LOGGED IN" : "○ LOGGED OUT"}
         </span>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
         <span>Page:</span>
         <span style={{ color: COLORS.authority, fontWeight: 600, textTransform: "uppercase" }}>{page}</span>
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
         <span>Cart:</span>
         <span style={{ color: COLORS.authority, fontWeight: 600 }}>{cartCount} items</span>
+      </div>
+
+      <div style={{ paddingTop: 8, borderTop: `0.5px solid ${COLORS.blueLight}` }}>
+        <button
+          onClick={() => setShowGuide(!showGuide)}
+          style={{
+            background: showGuide ? COLORS.authority : COLORS.blueLight,
+            color: showGuide ? "white" : COLORS.authority,
+            border: "none", padding: "8px 10px", borderRadius: 4,
+            fontSize: 10, fontWeight: 600, letterSpacing: 0.5, cursor: "pointer",
+            width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+            fontFamily: "inherit",
+          }}
+        >
+          <span>📋 DEMO GUIDE</span>
+          <span>{showGuide ? "▲" : "▼"}</span>
+        </button>
+        {showGuide && (
+          <div style={{ marginTop: 8, padding: 10, background: COLORS.blueLight, borderRadius: 4, fontSize: 10, lineHeight: 1.6 }}>
+            <div style={{ fontWeight: 600, color: COLORS.authority, marginBottom: 6, fontSize: 9, letterSpacing: 0.5 }}>QUÉ MOSTRAR:</div>
+            <div style={{ marginBottom: 6 }}>1. <strong>Logged out</strong> → mostrar gating, "Sign in for price"</div>
+            <div style={{ marginBottom: 6 }}>2. <strong>Login</strong> (cualquier credencial) → ver precios + ATC</div>
+            <div style={{ marginBottom: 6 }}>3. <strong>PLP</strong> → filtros vivos + promo metafield</div>
+            <div style={{ marginBottom: 6 }}>4. <strong>PDP skincare</strong> (Vitamin C) → spec 4.3 completo</div>
+            <div style={{ marginBottom: 6 }}>5. <strong>PDP injectable</strong> (MAGIQ) → formato saypha actual</div>
+            <div style={{ marginBottom: 6 }}>6. Agregar 1 injectable + 1 skincare → <strong>cart split notice</strong></div>
+            <div>7. Click ⚙ markers → notas técnicas BigC</div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 8, padding: 8, background: "#FFF8E5", borderRadius: 4, fontSize: 9, color: COLORS.darkGray, lineHeight: 1.5 }}>
+        <strong style={{ color: COLORS.authority }}>⚙ Notas BigC:</strong> click sobre los markers amarillos en el PDP para ver notas técnicas sobre la implementación en Stencil/BigCommerce.
       </div>
     </div>
   );

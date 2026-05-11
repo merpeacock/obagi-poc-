@@ -41,7 +41,7 @@ const FILTERS = {
 };
 
 export default function OBAGIPoC() {
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState("landing");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [cart, setCart] = useState([]);
@@ -150,63 +150,79 @@ export default function OBAGIPoC() {
         input { font-family: inherit; }
       `}</style>
 
-      {/* GLOBAL HEADER */}
-      <Header
-        isLoggedIn={isLoggedIn}
-        cartCount={cartCount}
-        page={page}
-        navTo={navTo}
-        setShowLoginModal={setShowLoginModal}
-        setIsLoggedIn={setIsLoggedIn}
-      />
+      {/* LANDING and LOGIN are standalone (no shared header/footer) */}
+      {page === "landing" && (
+        <ProLanding navTo={navTo} />
+      )}
+      {page === "login" && (
+        <LoginPage
+          navTo={navTo}
+          onLogin={() => { setIsLoggedIn(true); setPage("home"); window.scrollTo({ top: 0 }); }}
+        />
+      )}
 
-      {/* PAGES */}
-      <div className="obagi-fade-in" key={page + (activeCollection || "") + (activeProduct?.id || "")}>
-        {page === "home" && <HomePage isLoggedIn={isLoggedIn} navTo={navTo} addToCart={addToCart} setShowLoginModal={setShowLoginModal} />}
-        {page === "plp" && (
-          <PLPPage
+      {/* STOREFRONT pages share header + footer */}
+      {!["landing", "login"].includes(page) && (
+        <>
+          {/* GLOBAL HEADER */}
+          <Header
             isLoggedIn={isLoggedIn}
-            navTo={navTo}
-            addToCart={addToCart}
-            products={filteredProducts}
-            activeFilters={activeFilters}
-            toggleFilter={toggleFilter}
-            clearFilters={clearFilters}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-            setShowLoginModal={setShowLoginModal}
-            activeCollection={activeCollection}
-          />
-        )}
-        {page === "pdp" && activeProduct && (
-          <PDPPage
-            isLoggedIn={isLoggedIn}
-            product={activeProduct}
-            navTo={navTo}
-            addToCart={addToCart}
-            setShowLoginModal={setShowLoginModal}
-          />
-        )}
-        {page === "cart" && (
-          <CartPage
-            isLoggedIn={isLoggedIn}
-            cart={cart}
-            cartTotal={cartTotal}
-            hasInjectable={hasInjectable}
-            hasSkincare={hasSkincare}
-            updateCartQty={updateCartQty}
-            removeFromCart={removeFromCart}
+            cartCount={cartCount}
+            page={page}
             navTo={navTo}
             setShowLoginModal={setShowLoginModal}
+            setIsLoggedIn={setIsLoggedIn}
           />
-        )}
-        {page === "offers" && (
-          <OffersPage isLoggedIn={isLoggedIn} addToCart={addToCart} navTo={navTo} setShowLoginModal={setShowLoginModal} />
-        )}
-      </div>
 
-      {/* FOOTER */}
-      <Footer />
+          {/* PAGES */}
+          <div className="obagi-fade-in" key={page + (activeCollection || "") + (activeProduct?.id || "")}>
+            {page === "home" && <HomePage isLoggedIn={isLoggedIn} navTo={navTo} addToCart={addToCart} setShowLoginModal={setShowLoginModal} />}
+            {page === "plp" && (
+              <PLPPage
+                isLoggedIn={isLoggedIn}
+                navTo={navTo}
+                addToCart={addToCart}
+                products={filteredProducts}
+                activeFilters={activeFilters}
+                toggleFilter={toggleFilter}
+                clearFilters={clearFilters}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                setShowLoginModal={setShowLoginModal}
+                activeCollection={activeCollection}
+              />
+            )}
+            {page === "pdp" && activeProduct && (
+              <PDPPage
+                isLoggedIn={isLoggedIn}
+                product={activeProduct}
+                navTo={navTo}
+                addToCart={addToCart}
+                setShowLoginModal={setShowLoginModal}
+              />
+            )}
+            {page === "cart" && (
+              <CartPage
+                isLoggedIn={isLoggedIn}
+                cart={cart}
+                cartTotal={cartTotal}
+                hasInjectable={hasInjectable}
+                hasSkincare={hasSkincare}
+                updateCartQty={updateCartQty}
+                removeFromCart={removeFromCart}
+                navTo={navTo}
+                setShowLoginModal={setShowLoginModal}
+              />
+            )}
+            {page === "offers" && (
+              <OffersPage isLoggedIn={isLoggedIn} addToCart={addToCart} navTo={navTo} setShowLoginModal={setShowLoginModal} />
+            )}
+          </div>
+
+          {/* FOOTER */}
+          <Footer />
+        </>
+      )}
 
       {/* LOGIN MODAL */}
       {showLoginModal && (
@@ -246,9 +262,9 @@ function Header({ isLoggedIn, cartCount, page, navTo, setShowLoginModal, setIsLo
           {isLoggedIn ? (
             <>
               <span style={{ color: COLORS.authority, fontWeight: 600 }}>Welcome back, Dr. Smith</span>
-              <button onClick={() => setIsLoggedIn(false)} style={{
+              <button onClick={() => { setIsLoggedIn(false); navTo("landing"); }} style={{
                 background: "transparent", border: "none", color: COLORS.darkGray, fontSize: 11, padding: 0,
-                display: "flex", alignItems: "center", gap: 4,
+                display: "flex", alignItems: "center", gap: 4, cursor: "pointer",
               }} className="obagi-link">
                 <LogOut size={11} /> Sign Out
               </button>
@@ -1734,7 +1750,364 @@ function OffersPage({ isLoggedIn, addToCart, navTo, setShowLoginModal }) {
 }
 
 // ============================================================
-// LOGIN MODAL
+// PRO LANDING PAGE — entry point for obagi-professional.com
+// Mirrors the real Pro home (foto 1): centered logo header,
+// hero with floating products, trust strip with gold checkmarks
+// ============================================================
+function ProLanding({ navTo }) {
+  return (
+    <div style={{ background: "white", minHeight: "100vh", fontFamily: "'Open Sans', system-ui, sans-serif" }}>
+      {/* HEADER — logo centered, only person icon top right */}
+      <header style={{
+        padding: "20px 32px", position: "relative",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            fontFamily: "Georgia, serif", fontSize: 24, letterSpacing: 2,
+            color: COLORS.authority, fontWeight: 600, lineHeight: 1,
+          }}>OBAGI<sup style={{ fontSize: 10 }}>®</sup></div>
+          <div style={{
+            fontSize: 10, letterSpacing: 6, color: COLORS.authority,
+            fontWeight: 500, marginTop: 4, opacity: 0.8,
+          }}>MEDICAL</div>
+        </div>
+        <button onClick={() => navTo("login")} style={{
+          position: "absolute", right: 32, top: "50%", transform: "translateY(-50%)",
+          background: "transparent", border: "none", padding: 8, cursor: "pointer",
+          color: COLORS.authority,
+        }} title="Sign in">
+          <User size={22}/>
+        </button>
+      </header>
+
+      {/* HERO — split: products floating left, copy right */}
+      <section style={{
+        background: COLORS.blueLight,
+        padding: "60px 60px 100px",
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        <div style={{
+          maxWidth: 1400, margin: "0 auto",
+          display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 40, alignItems: "center",
+        }}>
+          {/* Floating products simulation — CSS mockup */}
+          <div style={{ position: "relative", minHeight: 420 }}>
+            {/* Multiple product placeholders at different rotations/positions */}
+            {[
+              { left: "5%", top: "20%", w: 70, h: 200, rot: -15, color: "#fefefe" },
+              { left: "20%", top: "10%", w: 50, h: 170, rot: 25, color: "#8B4513" },
+              { left: "32%", top: "40%", w: 80, h: 150, rot: -8, color: "#fafafa" },
+              { left: "48%", top: "5%", w: 60, h: 200, rot: 15, color: "#D4AF37" },
+              { left: "62%", top: "55%", w: 75, h: 100, rot: -20, color: "#fefefe" },
+              { left: "20%", top: "60%", w: 55, h: 180, rot: 30, color: "#2C5F9E" },
+              { left: "78%", top: "30%", w: 50, h: 160, rot: -25, color: "#fafafa" },
+            ].map((p, i) => (
+              <div key={i} style={{
+                position: "absolute",
+                left: p.left, top: p.top, width: p.w, height: p.h,
+                background: p.color,
+                transform: `rotate(${p.rot}deg)`,
+                borderRadius: 4,
+                boxShadow: "0 12px 32px rgba(23, 36, 98, 0.12)",
+                border: "1px solid rgba(255,255,255,0.5)",
+              }}>
+                <div style={{
+                  position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%) rotate(-90deg)",
+                  fontFamily: "Georgia, serif", fontSize: 8, letterSpacing: 2,
+                  color: p.color === "#fefefe" || p.color === "#fafafa" ? COLORS.authority : "rgba(255,255,255,0.9)",
+                  fontWeight: 600, whiteSpace: "nowrap",
+                }}>OBAGI</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Right: copy + CTAs */}
+          <div>
+            <div style={{
+              fontSize: 11, letterSpacing: 3, color: COLORS.authority,
+              fontWeight: 500, opacity: 0.7, marginBottom: 16,
+            }}>FOR PROFESSIONALS</div>
+            <h1 style={{
+              fontSize: 56, fontWeight: 500, color: COLORS.authority,
+              margin: "0 0 16px", letterSpacing: -1, lineHeight: 1,
+              fontFamily: "Georgia, 'Times New Roman', serif",
+            }}>Obagi Medical</h1>
+            <p style={{
+              fontSize: 16, color: COLORS.darkGray,
+              margin: "0 0 32px", lineHeight: 1.5,
+            }}>Join our mission to transform skin health</p>
+            <button onClick={() => navTo("login")} style={{
+              background: COLORS.authority, color: "white", border: "none",
+              padding: "14px 48px", borderRadius: 999, fontSize: 13,
+              letterSpacing: 0.5, fontWeight: 500, cursor: "pointer",
+              fontFamily: "inherit",
+            }} className="obagi-cta-primary">
+              Become a Partner
+            </button>
+            <div style={{ marginTop: 16 }}>
+              <button onClick={() => navTo("login")} style={{
+                background: "transparent", border: "none", padding: 0, cursor: "pointer",
+                color: COLORS.physician, fontSize: 13, textDecoration: "underline",
+                fontFamily: "inherit",
+              }}>Already a partner?</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TRUST SECTION — split: gel circle left, bulleted stats right */}
+      <section style={{ padding: "80px 60px", background: "white" }}>
+        <div style={{
+          maxWidth: 1400, margin: "0 auto",
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center",
+        }}>
+          {/* Left: circle with text overlay */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <div style={{
+              width: 380, height: 380, borderRadius: "50%",
+              background: `linear-gradient(135deg, ${COLORS.blueLight} 0%, ${COLORS.silver} 60%, ${COLORS.blueLight} 100%)`,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              position: "relative", overflow: "hidden",
+              boxShadow: "inset 0 0 60px rgba(23, 36, 98, 0.06)",
+            }}>
+              {/* Gel texture suggestion */}
+              <div style={{
+                position: "absolute", inset: 0,
+                background: `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 40%),
+                            radial-gradient(circle at 70% 70%, rgba(255,255,255,0.3) 0%, transparent 30%)`,
+              }}/>
+              <div style={{
+                fontSize: 28, fontWeight: 600, color: "white",
+                position: "relative", textShadow: "0 2px 8px rgba(23, 36, 98, 0.3)",
+              }}>Voted #1</div>
+              <div style={{
+                fontSize: 13, color: "white", marginTop: 12, textAlign: "center",
+                position: "relative", textShadow: "0 1px 4px rgba(23, 36, 98, 0.3)",
+                lineHeight: 1.5, maxWidth: 240,
+              }}>Medical-grade Skincare Brand<br/>by physicians</div>
+            </div>
+          </div>
+
+          {/* Right: stats list */}
+          <div>
+            <div style={{
+              fontSize: 11, letterSpacing: 3, color: COLORS.authority,
+              fontWeight: 600, marginBottom: 32,
+            }}>A PARTNER YOU CAN TRUST</div>
+            {[
+              "80+ Patents",
+              "Over 100 Products Tested",
+              "329+ Studies Conducted",
+              "6K+ Participants Involved",
+            ].map((stat, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 20,
+                padding: "16px 0",
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: "50%",
+                  background: COLORS.gold,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <ArrowRight size={18} color="white" strokeWidth={2.5}/>
+                </div>
+                <div style={{
+                  fontSize: 22, color: COLORS.darkGray,
+                  fontWeight: 400,
+                }}>{stat}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Sticky CTA bottom-left */}
+      <div style={{
+        position: "fixed", bottom: 24, left: 24, zIndex: 50,
+        background: "white", border: `1px solid ${COLORS.silver}`,
+        borderRadius: 6, padding: "12px 16px",
+        display: "flex", alignItems: "center", gap: 12,
+        boxShadow: "0 4px 16px rgba(23, 36, 98, 0.08)",
+        fontSize: 13, color: COLORS.authority, fontWeight: 500,
+      }}>
+        Contact a Sales Associate
+        <X size={14} style={{ cursor: "pointer", opacity: 0.6 }}/>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// LOGIN PAGE — simple centered card, mock auth
+// ============================================================
+function LoginPage({ navTo, onLogin }) {
+  const [email, setEmail] = useState("mpeacock@fjsolutions.com");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = () => {
+    if (!email || !password) {
+      setError("Please enter your email and password");
+      return;
+    }
+    setError("");
+    onLogin();
+  };
+
+  return (
+    <div style={{
+      minHeight: "100vh", background: COLORS.blueLight,
+      fontFamily: "'Open Sans', system-ui, sans-serif",
+      display: "flex", flexDirection: "column",
+    }}>
+      {/* HEADER — same as landing, logo centered */}
+      <header style={{
+        padding: "20px 32px", background: "white",
+        borderBottom: `1px solid ${COLORS.silver}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        position: "relative",
+      }}>
+        <button onClick={() => navTo("landing")} style={{
+          background: "transparent", border: "none", padding: 0, cursor: "pointer",
+          textAlign: "center",
+        }}>
+          <div style={{
+            fontFamily: "Georgia, serif", fontSize: 24, letterSpacing: 2,
+            color: COLORS.authority, fontWeight: 600, lineHeight: 1,
+          }}>OBAGI<sup style={{ fontSize: 10 }}>®</sup></div>
+          <div style={{
+            fontSize: 10, letterSpacing: 6, color: COLORS.authority,
+            fontWeight: 500, marginTop: 4, opacity: 0.8,
+          }}>MEDICAL</div>
+        </button>
+      </header>
+
+      {/* Centered login card */}
+      <div style={{
+        flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "60px 24px",
+      }}>
+        <div style={{
+          background: "white", padding: "48px 40px",
+          borderRadius: 8, maxWidth: 440, width: "100%",
+          boxShadow: "0 8px 32px rgba(23, 36, 98, 0.08)",
+        }}>
+          <div style={{
+            fontSize: 10, letterSpacing: 3, color: COLORS.authority,
+            fontWeight: 600, marginBottom: 8,
+          }}>FOR PROFESSIONALS</div>
+          <h1 style={{
+            fontSize: 28, fontWeight: 500, color: COLORS.authority,
+            margin: "0 0 8px", letterSpacing: -0.3,
+            fontFamily: "Georgia, 'Times New Roman', serif",
+          }}>Sign in</h1>
+          <p style={{
+            fontSize: 13, color: COLORS.darkGray, margin: "0 0 28px", lineHeight: 1.5,
+          }}>Welcome back. Sign in to access Pro pricing and your account.</p>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{
+              display: "block", fontSize: 10, letterSpacing: 1.5,
+              color: COLORS.darkGray, fontWeight: 600, marginBottom: 6,
+            }}>EMAIL</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              style={{
+                width: "100%", padding: "12px 14px",
+                border: `1px solid ${COLORS.silver}`, borderRadius: 4,
+                fontSize: 14, fontFamily: "inherit",
+                boxSizing: "border-box", color: COLORS.authority,
+              }}
+              autoFocus
+            />
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <label style={{
+              display: "block", fontSize: 10, letterSpacing: 1.5,
+              color: COLORS.darkGray, fontWeight: 600, marginBottom: 6,
+            }}>PASSWORD</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              placeholder="••••••••"
+              style={{
+                width: "100%", padding: "12px 14px",
+                border: `1px solid ${COLORS.silver}`, borderRadius: 4,
+                fontSize: 14, fontFamily: "inherit",
+                boxSizing: "border-box", color: COLORS.authority,
+              }}
+            />
+          </div>
+
+          {error && (
+            <div style={{
+              padding: "10px 14px", background: "#FEE",
+              border: `1px solid ${COLORS.error}`, borderRadius: 4,
+              fontSize: 12, color: COLORS.error, marginBottom: 16,
+            }}>{error}</div>
+          )}
+
+          <button onClick={handleSubmit} className="obagi-cta-primary" style={{
+            width: "100%", background: COLORS.authority, color: "white",
+            border: "none", padding: "14px", borderRadius: 999,
+            fontSize: 13, letterSpacing: 1, fontWeight: 600, cursor: "pointer",
+            fontFamily: "inherit",
+          }}>SIGN IN</button>
+
+          <div style={{
+            textAlign: "center", marginTop: 16, fontSize: 12, color: COLORS.darkGray,
+          }}>
+            <button style={{
+              background: "transparent", border: "none", color: COLORS.physician,
+              fontSize: 12, padding: 0, cursor: "pointer", fontFamily: "inherit",
+              textDecoration: "underline",
+            }}>Forgot password?</button>
+          </div>
+
+          <div style={{
+            marginTop: 24, paddingTop: 24, borderTop: `1px solid ${COLORS.blueLight}`,
+            textAlign: "center", fontSize: 12, color: COLORS.darkGray,
+          }}>
+            Don't have a Pro account?{" "}
+            <button onClick={() => navTo("landing")} style={{
+              background: "transparent", border: "none", color: COLORS.physician,
+              fontWeight: 600, padding: 0, cursor: "pointer", fontFamily: "inherit",
+            }}>Become a Partner</button>
+          </div>
+
+          {/* POC helper */}
+          <div style={{
+            marginTop: 20, padding: 10, background: COLORS.blueLight,
+            borderRadius: 4, fontSize: 10, color: COLORS.darkGray, textAlign: "center",
+            lineHeight: 1.5,
+          }}>
+            🎯 <strong style={{ color: COLORS.authority }}>POC:</strong> Any password works. Email pre-filled as <strong>mpeacock@fjsolutions.com</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer back link */}
+      <div style={{ padding: "20px 32px", textAlign: "center" }}>
+        <button onClick={() => navTo("landing")} style={{
+          background: "transparent", border: "none", color: COLORS.darkGray,
+          fontSize: 12, cursor: "pointer", fontFamily: "inherit",
+        }}>← Back to home</button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// LOGIN MODAL (legacy) — still used for in-storefront sign-in
 // ============================================================
 function LoginModal({ onClose, onLogin }) {
   const [email, setEmail] = useState("dr.smith@practice.com");
@@ -1988,13 +2361,15 @@ function DemoControls({ isLoggedIn, cartCount, page }) {
         {showGuide && (
           <div style={{ marginTop: 8, padding: 10, background: COLORS.blueLight, borderRadius: 4, fontSize: 10, lineHeight: 1.6 }}>
             <div style={{ fontWeight: 600, color: COLORS.authority, marginBottom: 6, fontSize: 9, letterSpacing: 0.5 }}>WHAT TO SHOW:</div>
-            <div style={{ marginBottom: 6 }}>1. <strong>Logged out</strong> → show gating, "Sign in for price"</div>
-            <div style={{ marginBottom: 6 }}>2. <strong>Login</strong> (any credentials work) → see prices + ATC</div>
-            <div style={{ marginBottom: 6 }}>3. <strong>PLP</strong> → live filters + promo metafield</div>
-            <div style={{ marginBottom: 6 }}>4. <strong>PDP skincare</strong> (Vitamin C) → full spec 4.3</div>
-            <div style={{ marginBottom: 6 }}>5. <strong>PDP injectable</strong> (MAGIQ) → current saypha format</div>
-            <div style={{ marginBottom: 6 }}>6. Add 1 injectable + 1 skincare → <strong>cart split notice</strong></div>
-            <div>7. Click ⚙ markers → BigC technical notes</div>
+            <div style={{ marginBottom: 6 }}>1. <strong>Pro Landing</strong> → "obagi-professional.com" entry point</div>
+            <div style={{ marginBottom: 6 }}>2. Click <strong>"Already a partner?"</strong> → login page</div>
+            <div style={{ marginBottom: 6 }}>3. <strong>Login</strong> (any password works) → storefront</div>
+            <div style={{ marginBottom: 6 }}>4. <strong>Storefront home</strong> → prices visible, ATC enabled</div>
+            <div style={{ marginBottom: 6 }}>5. <strong>PLP</strong> → live filters + promo metafield</div>
+            <div style={{ marginBottom: 6 }}>6. <strong>PDP skincare</strong> (Vitamin C) → full spec 4.3</div>
+            <div style={{ marginBottom: 6 }}>7. <strong>PDP injectable</strong> (MAGIQ) → current saypha format</div>
+            <div style={{ marginBottom: 6 }}>8. Add 1 injectable + 1 skincare → <strong>cart split notice</strong></div>
+            <div>9. Click ⚙ markers → BigC technical notes</div>
           </div>
         )}
       </div>
